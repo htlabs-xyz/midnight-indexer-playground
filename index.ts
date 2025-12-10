@@ -1,4 +1,4 @@
-import home from "./src/home.html"
+import home from "./src/index.html"
 import v1 from "./src/v1.html"
 import v3 from "./src/v3.html"
 
