@@ -1,49 +1,69 @@
-import { useState, useMemo, useCallback, useEffect } from "react"
-import { GraphiQL } from "graphiql"
-import { createFetcher, disposeWsClient } from "../lib/fetcher"
-import "graphiql/graphiql.css"
+import { useState, useCallback, useEffect, useRef } from "react"
+import { executeQuery, createSubscription, disposeWsClient } from "../lib/fetcher"
 
 const STORAGE_KEY = "midnight-playground-endpoint"
+const QUERY_STORAGE_KEY = "midnight-playground-query"
 const DEFAULT_ENDPOINT = "https://indexer.testnet-02.midnight.network/api/v1/graphql"
 
-const DEFAULT_QUERY = `# Midnight Indexer GraphQL Playground
-#
-# Enter your endpoint URL above and start querying!
-#
-# Example queries:
-
-# Get latest block
+const DEFAULT_QUERY = `# Get latest block
 query GetLatestBlock {
   block {
     hash
     height
     timestamp
     protocolVersion
+    author
   }
-}
+}`
 
-# Get block by height
-# query GetBlockByHeight {
-#   block(offset: { height: 100 }) {
-#     hash
-#     height
-#     timestamp
-#     transactions {
-#       hash
-#       id
-#     }
-#   }
-# }
-
-# Subscribe to new blocks
-# subscription BlockSubscription {
-#   blocks {
-#     hash
-#     height
-#     timestamp
-#   }
-# }
-`
+const EXAMPLE_QUERIES = [
+  {
+    name: "Latest Block",
+    query: `query GetLatestBlock {
+  block {
+    hash
+    height
+    timestamp
+    protocolVersion
+    author
+  }
+}`
+  },
+  {
+    name: "Block by Height",
+    query: `query GetBlockByHeight {
+  block(offset: { height: 100 }) {
+    hash
+    height
+    timestamp
+    transactions {
+      hash
+      id
+    }
+  }
+}`
+  },
+  {
+    name: "Transaction by Hash",
+    query: `query GetTransaction {
+  transactions(offset: { hash: "YOUR_TX_HASH" }) {
+    hash
+    id
+    protocolVersion
+  }
+}`
+  },
+  {
+    name: "Subscribe Blocks",
+    query: `subscription BlockSubscription {
+  blocks {
+    hash
+    height
+    timestamp
+  }
+}`
+  }
+]
 
 export function Playground() {
   const [endpoint, setEndpoint] = useState(() => {
@@ -52,54 +72,91 @@ export function Playground() {
     }
     return DEFAULT_ENDPOINT
   })
-  const [inputValue, setInputValue] = useState(() => {
+  const [query, setQuery] = useState(() => {
     if (typeof window !== "undefined") {
-      return localStorage.getItem(STORAGE_KEY) || DEFAULT_ENDPOINT
+      return localStorage.getItem(QUERY_STORAGE_KEY) || DEFAULT_QUERY
     }
-    return DEFAULT_ENDPOINT
+    return DEFAULT_QUERY
   })
-  const [isConnected, setIsConnected] = useState(false)
-
-  const wsEndpoint = useMemo(() => {
-    if (!endpoint) return undefined
-    try {
-      const url = new URL(endpoint)
-      url.protocol = url.protocol === "https:" ? "wss:" : "ws:"
-      return url.toString()
-    } catch {
-      return undefined
-    }
-  }, [endpoint])
-
-  const fetcher = useMemo(() => {
-    if (!endpoint) return null
-    return createFetcher(endpoint, wsEndpoint)
-  }, [endpoint, wsEndpoint])
-
-  const handleConnect = useCallback(() => {
-    if (!inputValue.trim()) return
-    try {
-      new URL(inputValue)
-      setEndpoint(inputValue)
-      setIsConnected(true)
-      localStorage.setItem(STORAGE_KEY, inputValue)
-    } catch {
-      alert("Invalid URL")
-    }
-  }, [inputValue])
-
-  const handleDisconnect = useCallback(() => {
-    disposeWsClient()
-    setIsConnected(false)
-    setEndpoint("")
-  }, [])
+  const [result, setResult] = useState<string>("")
+  const [isLoading, setIsLoading] = useState(false)
+  const [isSubscribed, setIsSubscribed] = useState(false)
+  const unsubscribeRef = useRef<(() => void) | null>(null)
 
   useEffect(() => {
-    return () => disposeWsClient()
+    localStorage.setItem(STORAGE_KEY, endpoint)
+  }, [endpoint])
+
+  useEffect(() => {
+    localStorage.setItem(QUERY_STORAGE_KEY, query)
+  }, [query])
+
+  useEffect(() => {
+    return () => {
+      if (unsubscribeRef.current) {
+        unsubscribeRef.current()
+      }
+      disposeWsClient()
+    }
   }, [])
 
+  const isSubscription = query.trim().toLowerCase().startsWith("subscription")
+
+  const handleExecute = useCallback(async () => {
+    if (isSubscribed && unsubscribeRef.current) {
+      unsubscribeRef.current()
+      unsubscribeRef.current = null
+      setIsSubscribed(false)
+      setResult("")
+      return
+    }
+
+    setIsLoading(true)
+    setResult("")
+
+    try {
+      if (isSubscription) {
+        const wsEndpoint = endpoint.replace("https://", "wss://").replace("http://", "ws://")
+        setIsSubscribed(true)
+        const results: unknown[] = []
+
+        unsubscribeRef.current = createSubscription(
+          wsEndpoint,
+          query,
+          undefined,
+          (data) => {
+            results.push(data)
+            setResult(JSON.stringify(results.slice(-10), null, 2))
+          },
+          (error) => {
+            setResult(JSON.stringify({ error: String(error) }, null, 2))
+            setIsSubscribed(false)
+          },
+          () => {
+            setIsSubscribed(false)
+          }
+        )
+        setIsLoading(false)
+      } else {
+        const response = await executeQuery(endpoint, query)
+        setResult(JSON.stringify(response, null, 2))
+        setIsLoading(false)
+      }
+    } catch (error) {
+      setResult(JSON.stringify({ error: String(error) }, null, 2))
+      setIsLoading(false)
+      setIsSubscribed(false)
+    }
+  }, [endpoint, query, isSubscription, isSubscribed])
+
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+      handleExecute()
+    }
+  }, [handleExecute])
+
   return (
-    <div style={{ height: "100vh", display: "flex", flexDirection: "column", backgroundColor: "#0d1117" }}>
+    <div style={{ height: "100vh", display: "flex", flexDirection: "column", backgroundColor: "#0d1117", color: "#c9d1d9" }}>
       <header style={{
         display: "flex",
         alignItems: "center",
@@ -108,86 +165,118 @@ export function Playground() {
         backgroundColor: "#161b22",
         borderBottom: "1px solid #30363d"
       }}>
-        <h1 style={{ fontSize: "1.125rem", fontWeight: 600, color: "white", margin: 0 }}>
-          Midnight Indexer Playground
+        <h1 style={{ fontSize: "1rem", fontWeight: 600, color: "white", margin: 0, whiteSpace: "nowrap" }}>
+          Midnight Indexer
         </h1>
-        <div style={{ flex: 1, display: "flex", alignItems: "center", gap: "0.5rem" }}>
-          <input
-            type="url"
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleConnect()}
-            placeholder="Enter GraphQL endpoint URL..."
-            disabled={isConnected}
-            style={{
-              flex: 1,
-              maxWidth: "36rem",
-              padding: "0.375rem 0.75rem",
-              borderRadius: "0.25rem",
-              backgroundColor: "#0d1117",
-              border: "1px solid #30363d",
-              color: "white",
-              fontSize: "0.875rem",
-              outline: "none",
-              opacity: isConnected ? 0.5 : 1
-            }}
-          />
-          {isConnected ? (
-            <button
-              onClick={handleDisconnect}
-              style={{
-                padding: "0.375rem 1rem",
-                borderRadius: "0.25rem",
-                backgroundColor: "#dc2626",
-                color: "white",
-                fontSize: "0.875rem",
-                fontWeight: 500,
-                border: "none",
-                cursor: "pointer"
-              }}
-            >
-              Disconnect
-            </button>
-          ) : (
-            <button
-              onClick={handleConnect}
-              disabled={!inputValue.trim()}
-              style={{
-                padding: "0.375rem 1rem",
-                borderRadius: "0.25rem",
-                backgroundColor: "#238636",
-                color: "white",
-                fontSize: "0.875rem",
-                fontWeight: 500,
-                border: "none",
-                cursor: inputValue.trim() ? "pointer" : "not-allowed",
-                opacity: inputValue.trim() ? 1 : 0.5
-              }}
-            >
-              Connect
-            </button>
-          )}
-        </div>
-        {isConnected && (
-          <span style={{ display: "flex", alignItems: "center", gap: "0.375rem", fontSize: "0.875rem", color: "#4ade80" }}>
-            <span style={{ width: "0.5rem", height: "0.5rem", borderRadius: "9999px", backgroundColor: "#4ade80" }}></span>
-            Connected
-          </span>
-        )}
+        <input
+          type="url"
+          value={endpoint}
+          onChange={(e) => setEndpoint(e.target.value)}
+          placeholder="GraphQL endpoint URL..."
+          style={{
+            flex: 1,
+            maxWidth: "500px",
+            padding: "0.375rem 0.75rem",
+            borderRadius: "0.375rem",
+            backgroundColor: "#0d1117",
+            border: "1px solid #30363d",
+            color: "white",
+            fontSize: "0.875rem",
+            outline: "none"
+          }}
+        />
+        <select
+          onChange={(e) => {
+            const selected = EXAMPLE_QUERIES.find(q => q.name === e.target.value)
+            if (selected) setQuery(selected.query)
+          }}
+          style={{
+            padding: "0.375rem 0.75rem",
+            borderRadius: "0.375rem",
+            backgroundColor: "#21262d",
+            border: "1px solid #30363d",
+            color: "#c9d1d9",
+            fontSize: "0.875rem",
+            cursor: "pointer"
+          }}
+        >
+          <option value="">Examples</option>
+          {EXAMPLE_QUERIES.map(q => (
+            <option key={q.name} value={q.name}>{q.name}</option>
+          ))}
+        </select>
       </header>
 
-      <main style={{ flex: 1, overflow: "hidden" }}>
-        {fetcher && isConnected ? (
-          <GraphiQL fetcher={fetcher} defaultQuery={DEFAULT_QUERY} />
-        ) : (
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", color: "#9ca3af" }}>
-            <div style={{ textAlign: "center" }}>
-              <p style={{ fontSize: "1.25rem", marginBottom: "0.5rem" }}>Welcome to Midnight Indexer Playground</p>
-              <p style={{ fontSize: "0.875rem" }}>Enter a GraphQL endpoint URL above to get started</p>
-            </div>
+      <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", borderRight: "1px solid #30363d" }}>
+          <div style={{ padding: "0.5rem 1rem", backgroundColor: "#161b22", borderBottom: "1px solid #30363d", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <span style={{ fontSize: "0.75rem", color: "#8b949e" }}>QUERY</span>
+            <button
+              onClick={handleExecute}
+              disabled={isLoading}
+              style={{
+                padding: "0.375rem 1rem",
+                borderRadius: "0.375rem",
+                backgroundColor: isSubscribed ? "#dc2626" : "#238636",
+                color: "white",
+                fontSize: "0.75rem",
+                fontWeight: 600,
+                border: "none",
+                cursor: isLoading ? "wait" : "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: "0.375rem"
+              }}
+            >
+              {isSubscribed ? "Stop" : isSubscription ? "Subscribe" : "Run"}
+              <span style={{ opacity: 0.7, fontSize: "0.625rem" }}>Ctrl+Enter</span>
+            </button>
           </div>
-        )}
-      </main>
+          <textarea
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={handleKeyDown}
+            spellCheck={false}
+            style={{
+              flex: 1,
+              padding: "1rem",
+              backgroundColor: "#0d1117",
+              border: "none",
+              color: "#c9d1d9",
+              fontSize: "0.875rem",
+              fontFamily: "'SF Mono', Monaco, 'Cascadia Code', monospace",
+              resize: "none",
+              outline: "none",
+              lineHeight: 1.5
+            }}
+          />
+        </div>
+
+        <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+          <div style={{ padding: "0.5rem 1rem", backgroundColor: "#161b22", borderBottom: "1px solid #30363d", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <span style={{ fontSize: "0.75rem", color: "#8b949e" }}>RESULT</span>
+            {isSubscribed && (
+              <span style={{ fontSize: "0.75rem", color: "#4ade80", display: "flex", alignItems: "center", gap: "0.25rem" }}>
+                <span style={{ width: "0.5rem", height: "0.5rem", borderRadius: "50%", backgroundColor: "#4ade80", animation: "pulse 2s infinite" }}></span>
+                Subscribed
+              </span>
+            )}
+          </div>
+          <pre style={{
+            flex: 1,
+            padding: "1rem",
+            margin: 0,
+            backgroundColor: "#0d1117",
+            color: result.includes('"error"') ? "#f85149" : "#7ee787",
+            fontSize: "0.875rem",
+            fontFamily: "'SF Mono', Monaco, 'Cascadia Code', monospace",
+            overflow: "auto",
+            lineHeight: 1.5
+          }}>
+            {isLoading ? "Loading..." : result || "// Results will appear here"}
+          </pre>
+        </div>
+      </div>
     </div>
   )
 }

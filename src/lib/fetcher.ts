@@ -1,27 +1,61 @@
-import { createGraphiQLFetcher, type Fetcher } from "@graphiql/toolkit"
 import { createClient, type Client } from "graphql-ws"
 
 let wsClient: Client | null = null
 
-export function createFetcher(endpoint: string, wsEndpoint?: string): Fetcher {
+type GraphQLResponse = {
+  data?: unknown
+  errors?: Array<{ message: string }>
+}
+
+export async function executeQuery(
+  endpoint: string,
+  query: string,
+  variables?: Record<string, unknown>
+): Promise<GraphQLResponse> {
+  const response = await fetch(endpoint, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+    body: JSON.stringify({ query, variables }),
+  })
+  return response.json()
+}
+
+export function createSubscription(
+  wsEndpoint: string,
+  query: string,
+  variables: Record<string, unknown> | undefined,
+  onData: (data: unknown) => void,
+  onError: (error: unknown) => void,
+  onComplete: () => void
+): () => void {
   if (wsClient) {
     wsClient.dispose()
-    wsClient = null
   }
 
-  const options: Parameters<typeof createGraphiQLFetcher>[0] = {
-    url: endpoint,
-  }
+  wsClient = createClient({
+    url: wsEndpoint,
+    retryAttempts: 3,
+  })
 
-  if (wsEndpoint) {
-    wsClient = createClient({
-      url: wsEndpoint,
-      retryAttempts: 3,
-    })
-    options.wsClient = wsClient
-  }
+  const unsubscribe = wsClient.subscribe(
+    { query, variables },
+    {
+      next: (result) => onData(result),
+      error: onError,
+      complete: onComplete,
+    }
+  )
 
-  return createGraphiQLFetcher(options)
+  return () => {
+    unsubscribe()
+    if (wsClient) {
+      wsClient.dispose()
+      wsClient = null
+    }
+  }
 }
 
 export function disposeWsClient() {
