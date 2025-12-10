@@ -93,12 +93,19 @@ export function Playground() {
   }, [])
 
   return (
-    <div className="h-screen flex flex-col bg-[#0d1117]">
-      <header className="flex items-center gap-4 px-4 py-3 bg-[#161b22] border-b border-[#30363d]">
-        <h1 className="text-lg font-semibold text-white">
+    <div style={{ height: "100vh", display: "flex", flexDirection: "column", backgroundColor: "#0d1117" }}>
+      <header style={{
+        display: "flex",
+        alignItems: "center",
+        gap: "1rem",
+        padding: "0.75rem 1rem",
+        backgroundColor: "#161b22",
+        borderBottom: "1px solid #30363d"
+      }}>
+        <h1 style={{ fontSize: "1.125rem", fontWeight: 600, color: "white", margin: 0 }}>
           Midnight Indexer Playground
         </h1>
-        <div className="flex-1 flex items-center gap-2">
+        <div style={{ flex: 1, display: "flex", alignItems: "center", gap: "0.5rem" }}>
           <input
             type="url"
             value={inputValue}
@@ -106,12 +113,32 @@ export function Playground() {
             onKeyDown={(e) => e.key === "Enter" && handleConnect()}
             placeholder="Enter GraphQL endpoint URL..."
             disabled={isConnected}
-            className="flex-1 max-w-xl px-3 py-1.5 rounded bg-[#0d1117] border border-[#30363d] text-white placeholder-gray-500 text-sm focus:outline-none focus:border-[#58a6ff] disabled:opacity-50"
+            style={{
+              flex: 1,
+              maxWidth: "36rem",
+              padding: "0.375rem 0.75rem",
+              borderRadius: "0.25rem",
+              backgroundColor: "#0d1117",
+              border: "1px solid #30363d",
+              color: "white",
+              fontSize: "0.875rem",
+              outline: "none",
+              opacity: isConnected ? 0.5 : 1
+            }}
           />
           {isConnected ? (
             <button
               onClick={handleDisconnect}
-              className="px-4 py-1.5 rounded bg-red-600 hover:bg-red-700 text-white text-sm font-medium transition-colors"
+              style={{
+                padding: "0.375rem 1rem",
+                borderRadius: "0.25rem",
+                backgroundColor: "#dc2626",
+                color: "white",
+                fontSize: "0.875rem",
+                fontWeight: 500,
+                border: "none",
+                cursor: "pointer"
+              }}
             >
               Disconnect
             </button>
@@ -119,28 +146,38 @@ export function Playground() {
             <button
               onClick={handleConnect}
               disabled={!inputValue.trim()}
-              className="px-4 py-1.5 rounded bg-[#238636] hover:bg-[#2ea043] text-white text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{
+                padding: "0.375rem 1rem",
+                borderRadius: "0.25rem",
+                backgroundColor: "#238636",
+                color: "white",
+                fontSize: "0.875rem",
+                fontWeight: 500,
+                border: "none",
+                cursor: inputValue.trim() ? "pointer" : "not-allowed",
+                opacity: inputValue.trim() ? 1 : 0.5
+              }}
             >
               Connect
             </button>
           )}
         </div>
         {isConnected && (
-          <span className="flex items-center gap-1.5 text-sm text-green-400">
-            <span className="w-2 h-2 rounded-full bg-green-400"></span>
+          <span style={{ display: "flex", alignItems: "center", gap: "0.375rem", fontSize: "0.875rem", color: "#4ade80" }}>
+            <span style={{ width: "0.5rem", height: "0.5rem", borderRadius: "9999px", backgroundColor: "#4ade80" }}></span>
             Connected
           </span>
         )}
       </header>
 
-      <main className="flex-1 overflow-hidden">
+      <main style={{ flex: 1, overflow: "hidden" }}>
         {fetcher && isConnected ? (
           <GraphiQL fetcher={fetcher} defaultQuery={DEFAULT_QUERY} />
         ) : (
-          <div className="flex items-center justify-center h-full text-gray-400">
-            <div className="text-center">
-              <p className="text-xl mb-2">Welcome to Midnight Indexer Playground</p>
-              <p className="text-sm">Enter a GraphQL endpoint URL above to get started</p>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", color: "#9ca3af" }}>
+            <div style={{ textAlign: "center" }}>
+              <p style={{ fontSize: "1.25rem", marginBottom: "0.5rem" }}>Welcome to Midnight Indexer Playground</p>
+              <p style={{ fontSize: "0.875rem" }}>Enter a GraphQL endpoint URL above to get started</p>
             </div>
           </div>
         )}
