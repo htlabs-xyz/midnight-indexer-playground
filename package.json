@@ -3,10 +3,28 @@
   "module": "index.ts",
   "type": "module",
   "private": true,
+  "scripts": {
+    "dev": "bun --hot index.ts",
+    "build": "bun build ./src/index.html --outdir ./dist",
+    "start": "bun index.ts"
+  },
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "@types/react": "^19.2.7",
+    "@types/react-dom": "^19.2.3"
   },
   "peerDependencies": {
     "typescript": "^5"
+  },
+  "dependencies": {
+    "@graphiql/react": "^0.37.3",
+    "@graphiql/toolkit": "^0.11.3",
+    "@tailwindcss/vite": "^4.1.17",
+    "graphiql": "^5.2.2",
+    "graphql": "^16.12.0",
+    "graphql-ws": "^6.0.6",
+    "react": "^19.2.1",
+    "react-dom": "^19.2.1",
+    "tailwindcss": "^4.1.17"
   }
 }
