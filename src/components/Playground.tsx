@@ -4,6 +4,7 @@ import { createFetcher, disposeWsClient } from "../lib/fetcher"
 import "graphiql/graphiql.css"
 
 const STORAGE_KEY = "midnight-playground-endpoint"
+const DEFAULT_ENDPOINT = "https://indexer.testnet-02.midnight.network/api/v1/graphql"
 
 const DEFAULT_QUERY = `# Midnight Indexer GraphQL Playground
 #
@@ -47,11 +48,16 @@ query GetLatestBlock {
 export function Playground() {
   const [endpoint, setEndpoint] = useState(() => {
     if (typeof window !== "undefined") {
-      return localStorage.getItem(STORAGE_KEY) || ""
+      return localStorage.getItem(STORAGE_KEY) || DEFAULT_ENDPOINT
     }
-    return ""
+    return DEFAULT_ENDPOINT
   })
-  const [inputValue, setInputValue] = useState(endpoint)
+  const [inputValue, setInputValue] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem(STORAGE_KEY) || DEFAULT_ENDPOINT
+    }
+    return DEFAULT_ENDPOINT
+  })
   const [isConnected, setIsConnected] = useState(false)
 
   const wsEndpoint = useMemo(() => {
