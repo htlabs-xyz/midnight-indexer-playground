@@ -1,0 +1,9 @@
+{
+  "buildCommand": "bun run build",
+  "outputDirectory": "dist",
+  "installCommand": "bun install",
+  "rewrites": [
+    { "source": "/v1", "destination": "/v1.html" },
+    { "source": "/v3", "destination": "/v3.html" }
+  ]
+}
