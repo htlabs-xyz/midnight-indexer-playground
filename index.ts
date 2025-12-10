@@ -1,9 +1,13 @@
-import index from "./src/index.html"
+import home from "./src/home.html"
+import v1 from "./src/v1.html"
+import v3 from "./src/v3.html"
 
 const server = Bun.serve({
   port: 3000,
   routes: {
-    "/": index,
+    "/": home,
+    "/v1": v1,
+    "/v3": v3,
   },
   development: {
     hmr: true,

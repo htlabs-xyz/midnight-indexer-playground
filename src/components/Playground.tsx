@@ -1,82 +1,32 @@
 import { useState, useCallback, useEffect, useRef } from "react"
 import { executeQuery, createSubscription, disposeWsClient } from "../lib/fetcher"
+import { ENDPOINTS, EXAMPLE_QUERIES, DEFAULT_QUERIES, type SchemaVersion } from "../config"
 
-const STORAGE_KEY = "midnight-playground-endpoint"
-const QUERY_STORAGE_KEY = "midnight-playground-query"
-const DEFAULT_ENDPOINT = "https://indexer.testnet-02.midnight.network/api/v1/graphql"
+type Props = {
+  version: SchemaVersion
+}
 
-const DEFAULT_QUERY = `# Get latest block
-query GetLatestBlock {
-  block {
-    hash
-    height
-    timestamp
-    protocolVersion
-    author
-  }
-}`
+export function Playground({ version }: Props) {
+  const STORAGE_KEY = `midnight-playground-endpoint-${version}`
+  const QUERY_STORAGE_KEY = `midnight-playground-query-${version}`
+  const defaultEndpoint = ENDPOINTS[version].http
+  const defaultWsEndpoint = ENDPOINTS[version].ws
+  const examples = EXAMPLE_QUERIES[version]
+  const defaultQuery = DEFAULT_QUERIES[version]
 
-const EXAMPLE_QUERIES = [
-  {
-    name: "Latest Block",
-    query: `query GetLatestBlock {
-  block {
-    hash
-    height
-    timestamp
-    protocolVersion
-    author
-  }
-}`
-  },
-  {
-    name: "Block by Height",
-    query: `query GetBlockByHeight {
-  block(offset: { height: 100 }) {
-    hash
-    height
-    timestamp
-    transactions {
-      hash
-      id
-    }
-  }
-}`
-  },
-  {
-    name: "Transaction by Hash",
-    query: `query GetTransaction {
-  transactions(offset: { hash: "YOUR_TX_HASH" }) {
-    hash
-    id
-    protocolVersion
-  }
-}`
-  },
-  {
-    name: "Subscribe Blocks",
-    query: `subscription BlockSubscription {
-  blocks {
-    hash
-    height
-    timestamp
-  }
-}`
-  }
-]
-
-export function Playground() {
   const [endpoint, setEndpoint] = useState(() => {
     if (typeof window !== "undefined") {
-      return localStorage.getItem(STORAGE_KEY) || DEFAULT_ENDPOINT
+      return localStorage.getItem(STORAGE_KEY) || defaultEndpoint
     }
-    return DEFAULT_ENDPOINT
+    return defaultEndpoint
   })
+
+  const wsEndpoint = defaultWsEndpoint
   const [query, setQuery] = useState(() => {
     if (typeof window !== "undefined") {
-      return localStorage.getItem(QUERY_STORAGE_KEY) || DEFAULT_QUERY
+      return localStorage.getItem(QUERY_STORAGE_KEY) || defaultQuery
     }
-    return DEFAULT_QUERY
+    return defaultQuery
   })
   const [result, setResult] = useState<string>("")
   const [isLoading, setIsLoading] = useState(false)
@@ -85,11 +35,11 @@ export function Playground() {
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, endpoint)
-  }, [endpoint])
+  }, [endpoint, STORAGE_KEY])
 
   useEffect(() => {
     localStorage.setItem(QUERY_STORAGE_KEY, query)
-  }, [query])
+  }, [query, QUERY_STORAGE_KEY])
 
   useEffect(() => {
     return () => {
@@ -116,7 +66,6 @@ export function Playground() {
 
     try {
       if (isSubscription) {
-        const wsEndpoint = endpoint.replace("https://", "wss://").replace("http://", "ws://")
         setIsSubscribed(true)
         const results: unknown[] = []
 
@@ -155,6 +104,8 @@ export function Playground() {
     }
   }, [handleExecute])
 
+  const otherVersion = version === "v1" ? "v3" : "v1"
+
   return (
     <div style={{ height: "100vh", display: "flex", flexDirection: "column", backgroundColor: "#0d1117", color: "#c9d1d9" }}>
       <header style={{
@@ -165,9 +116,21 @@ export function Playground() {
         backgroundColor: "#161b22",
         borderBottom: "1px solid #30363d"
       }}>
-        <h1 style={{ fontSize: "1rem", fontWeight: 600, color: "white", margin: 0, whiteSpace: "nowrap" }}>
-          Midnight Indexer
-        </h1>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+          <h1 style={{ fontSize: "1rem", fontWeight: 600, color: "white", margin: 0, whiteSpace: "nowrap" }}>
+            Midnight Indexer
+          </h1>
+          <span style={{
+            padding: "0.125rem 0.5rem",
+            borderRadius: "9999px",
+            backgroundColor: version === "v3" ? "#238636" : "#1f6feb",
+            color: "white",
+            fontSize: "0.75rem",
+            fontWeight: 600
+          }}>
+            {version.toUpperCase()}
+          </span>
+        </div>
         <input
           type="url"
           value={endpoint}
@@ -187,7 +150,7 @@ export function Playground() {
         />
         <select
           onChange={(e) => {
-            const selected = EXAMPLE_QUERIES.find(q => q.name === e.target.value)
+            const selected = examples.find(q => q.name === e.target.value)
             if (selected) setQuery(selected.query)
           }}
           style={{
@@ -201,10 +164,24 @@ export function Playground() {
           }}
         >
           <option value="">Examples</option>
-          {EXAMPLE_QUERIES.map(q => (
+          {examples.map(q => (
             <option key={q.name} value={q.name}>{q.name}</option>
           ))}
         </select>
+        <a
+          href={`/${otherVersion}`}
+          style={{
+            padding: "0.375rem 0.75rem",
+            borderRadius: "0.375rem",
+            backgroundColor: "#21262d",
+            border: "1px solid #30363d",
+            color: "#c9d1d9",
+            fontSize: "0.875rem",
+            textDecoration: "none"
+          }}
+        >
+          Switch to {otherVersion.toUpperCase()}
+        </a>
       </header>
 
       <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
@@ -257,7 +234,7 @@ export function Playground() {
             <span style={{ fontSize: "0.75rem", color: "#8b949e" }}>RESULT</span>
             {isSubscribed && (
               <span style={{ fontSize: "0.75rem", color: "#4ade80", display: "flex", alignItems: "center", gap: "0.25rem" }}>
-                <span style={{ width: "0.5rem", height: "0.5rem", borderRadius: "50%", backgroundColor: "#4ade80", animation: "pulse 2s infinite" }}></span>
+                <span style={{ width: "0.5rem", height: "0.5rem", borderRadius: "50%", backgroundColor: "#4ade80" }}></span>
                 Subscribed
               </span>
             )}
