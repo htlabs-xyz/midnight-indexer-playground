@@ -6,8 +6,8 @@ export const ENDPOINTS = {
     ws: "wss://indexer.testnet-02.midnight.network/api/v1/graphql/ws",
   },
   v3: {
-    http: "https://indexer.testnet-03.midnight.network/api/v1/graphql",
-    ws: "wss://indexer.testnet-03.midnight.network/api/v1/graphql/ws",
+    http: "https://indexer-testnet.nocturne.cash/api/v3/graphql",
+    ws: "wss://indexer-testnet.nocturne.cash/api/v3/graphql/ws",
   },
 }
 
