@@ -124,6 +124,45 @@ export const EXAMPLE_QUERIES_V3 = [
       timestamp
       ledgerParameters
     }
+    contractActions {
+      address
+      state
+      zswapState
+      unshieldedBalances {
+        tokenType
+        amount
+      }
+    }
+    unshieldedCreatedOutputs {
+      owner
+      tokenType
+      value
+      outputIndex
+      intentHash
+      ctime
+      initialNonce
+      registeredForDustGeneration
+    }
+    unshieldedSpentOutputs {
+      owner
+      tokenType
+      value
+      outputIndex
+      intentHash
+      ctime
+      initialNonce
+      registeredForDustGeneration
+    }
+    zswapLedgerEvents {
+      id
+      raw
+      maxId
+    }
+    dustLedgerEvents {
+      id
+      raw
+      maxId
+    }
   }
 }`
   },
