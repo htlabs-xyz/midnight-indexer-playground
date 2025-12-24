@@ -207,6 +207,48 @@ export const EXAMPLE_QUERIES_V3 = [
 }`
   },
   {
+    name: "Subscribe Unshielded Transactions by Address",
+    query: `subscription UnshieldedTransactionsByAddress {
+  unshieldedTransactions(address: "mn_addr_preview1") {
+    ... on UnshieldedTransaction {
+      transaction {
+        id
+        hash
+        protocolVersion
+        block {
+          hash
+          height
+          timestamp
+        }
+      }
+      createdUtxos {
+        owner
+        tokenType
+        value
+        outputIndex
+        intentHash
+        ctime
+        initialNonce
+        registeredForDustGeneration
+      }
+      spentUtxos {
+        owner
+        tokenType
+        value
+        outputIndex
+        intentHash
+        ctime
+        initialNonce
+        registeredForDustGeneration
+      }
+    }
+    ... on UnshieldedTransactionsProgress {
+      highestTransactionId
+    }
+  }
+}`
+  },
+  {
     name: "DUST Generation Status",
     query: `query GetDustGenerationStatus {
   dustGenerationStatus(
