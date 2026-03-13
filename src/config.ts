@@ -1,7 +1,8 @@
 import { EXAMPLE_QUERIES_V1, DEFAULT_QUERY_V1 } from "./queries/v1"
 import { EXAMPLE_QUERIES_V3, DEFAULT_QUERY_V3 } from "./queries/v3"
+import { EXAMPLE_QUERIES_V4, DEFAULT_QUERY_V4 } from "./queries/v4"
 
-export type SchemaVersion = "v1" | "v3"
+export type SchemaVersion = "v1" | "v3" | "v4"
 
 export const ENDPOINTS = {
   v1: {
@@ -12,14 +13,20 @@ export const ENDPOINTS = {
     http: "https://indexer.preview.midnight.network/api/v3/graphql",
     ws: "wss://indexer.preview.midnight.network/api/v3/graphql/ws",
   },
+  v4: {
+    http: "https://indexer.preview.midnight.network/api/v4/graphql",
+    ws: "wss://indexer.preview.midnight.network/api/v4/graphql/ws",
+  },
 }
 
 export const EXAMPLE_QUERIES = {
   v1: EXAMPLE_QUERIES_V1,
   v3: EXAMPLE_QUERIES_V3,
+  v4: EXAMPLE_QUERIES_V4,
 }
 
 export const DEFAULT_QUERIES = {
   v1: DEFAULT_QUERY_V1,
   v3: DEFAULT_QUERY_V3,
+  v4: DEFAULT_QUERY_V4,
 }

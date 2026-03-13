@@ -104,7 +104,14 @@ export function Playground({ version }: Props) {
     }
   }, [handleExecute])
 
-  const otherVersion = version === "v1" ? "v3" : "v1"
+  const allVersions: SchemaVersion[] = ["v1", "v3", "v4"]
+  const otherVersions = allVersions.filter(v => v !== version)
+
+  const versionColors: Record<SchemaVersion, string> = {
+    v1: "#1f6feb",
+    v3: "#238636",
+    v4: "#a371f7",
+  }
 
   return (
     <div style={{ height: "100vh", display: "flex", flexDirection: "column", backgroundColor: "#0d1117", color: "#c9d1d9" }}>
@@ -123,7 +130,7 @@ export function Playground({ version }: Props) {
           <span style={{
             padding: "0.125rem 0.5rem",
             borderRadius: "9999px",
-            backgroundColor: version === "v3" ? "#238636" : "#1f6feb",
+            backgroundColor: versionColors[version],
             color: "white",
             fontSize: "0.75rem",
             fontWeight: 600
@@ -168,20 +175,23 @@ export function Playground({ version }: Props) {
             <option key={q.name} value={q.name}>{q.name}</option>
           ))}
         </select>
-        <a
-          href={`/${otherVersion}`}
-          style={{
-            padding: "0.375rem 0.75rem",
-            borderRadius: "0.375rem",
-            backgroundColor: "#21262d",
-            border: "1px solid #30363d",
-            color: "#c9d1d9",
-            fontSize: "0.875rem",
-            textDecoration: "none"
-          }}
-        >
-          Switch to {otherVersion.toUpperCase()}
-        </a>
+        {otherVersions.map(v => (
+          <a
+            key={v}
+            href={`/${v}`}
+            style={{
+              padding: "0.375rem 0.75rem",
+              borderRadius: "0.375rem",
+              backgroundColor: "#21262d",
+              border: "1px solid #30363d",
+              color: "#c9d1d9",
+              fontSize: "0.875rem",
+              textDecoration: "none"
+            }}
+          >
+            {v.toUpperCase()}
+          </a>
+        ))}
       </header>
 
       <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
