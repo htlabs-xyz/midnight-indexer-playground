@@ -1,15 +1,21 @@
-# indexer-playground
+# Midnight Indexer Playground
 
-To install dependencies:
+A GraphQL playground for the Midnight Indexer API, supporting schema versions v1, v3, and v4.
 
-```bash
-bun install
-```
+Built with Next.js 16, React 19, TypeScript, and Tailwind CSS.
 
-To run:
+## Getting Started
 
 ```bash
-bun run index.ts
+yarn install
+yarn dev
 ```
 
-This project was created using `bun init` in bun v1.2.20. [Bun](https://bun.com) is a fast all-in-one JavaScript runtime.
+Open [http://localhost:3000](http://localhost:3000).
+
+## Build
+
+```bash
+yarn build    # static export to out/
+yarn start    # serve production build
+```

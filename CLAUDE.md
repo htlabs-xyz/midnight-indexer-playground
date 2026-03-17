@@ -1,18 +1,19 @@
 ---
 
-Use Yarn and Vite for this project.
+Uses Next.js 16 with App Router, TypeScript, and Tailwind CSS.
 
 - Use `yarn install` for installing dependencies
-- Use `yarn dev` to start the dev server
-- Use `yarn build` to build for production
-- Use `yarn start` to preview the production build
+- Use `yarn dev` to start the dev server (Turbopack)
+- Use `yarn build` to build for production (static export to `out/`)
+- Use `yarn start` to serve the production build
 
 ## Frontend
 
-Uses Vite with React and TypeScript. Multi-page app with entries in `src/` (`index.html`, `v1.html`, `v3.html`, `v4.html`).
+Next.js App Router with static export (`output: 'export'`). Routes:
+- `/` — Landing page (server component)
+- `/v1`, `/v3`, `/v4` — Playground pages (client components)
 
-Config: `vite.config.ts`
-
-```sh
-yarn dev
-```
+Key directories:
+- `app/` — Pages and layouts
+- `app/components/` — Shared React components
+- `lib/` — Config, queries, fetcher utilities
