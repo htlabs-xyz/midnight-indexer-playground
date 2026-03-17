@@ -17,7 +17,6 @@ export function Playground({ version }: { version: SchemaVersion }) {
   const STORAGE_KEY = `midnight-playground-endpoint-${version}`
   const QUERY_STORAGE_KEY = `midnight-playground-query-${version}`
   const defaultEndpoint = ENDPOINTS[version].http
-  const defaultWsEndpoint = ENDPOINTS[version].ws
   const examples = EXAMPLE_QUERIES[version]
   const defaultQuery = DEFAULT_QUERIES[version]
 
@@ -27,6 +26,12 @@ export function Playground({ version }: { version: SchemaVersion }) {
     }
     return defaultEndpoint
   })
+
+  // Derive WS endpoint from HTTP endpoint: http(s) → ws(s), append /ws
+  const wsEndpoint = endpoint
+    .replace(/^https:\/\//, "wss://")
+    .replace(/^http:\/\//, "ws://")
+    .replace(/\/$/, "") + "/ws"
 
   const [query, setQuery] = useState(() => {
     if (typeof window !== "undefined") {
@@ -77,7 +82,7 @@ export function Playground({ version }: { version: SchemaVersion }) {
         const results: unknown[] = []
 
         unsubscribeRef.current = createSubscription(
-          defaultWsEndpoint,
+          wsEndpoint,
           query,
           undefined,
           (data) => {
@@ -103,7 +108,7 @@ export function Playground({ version }: { version: SchemaVersion }) {
       setIsLoading(false)
       setIsSubscribed(false)
     }
-  }, [endpoint, query, isSubscription, isSubscribed, defaultWsEndpoint])
+  }, [endpoint, query, isSubscription, isSubscribed, wsEndpoint])
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
